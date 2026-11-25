@@ -1,0 +1,44 @@
+@startuml UC_Auth_User_Management
+title Authentication & User Management — Provisional
+
+left to right direction
+
+actor "System Administrator" as SA
+actor "Inventory Administrator" as IA
+actor "Warehouse Operator" as WO
+actor "Manager / Viewer" as MV
+
+rectangle "System Boundary — Authentication & User Management" {
+  usecase "UC-01 Log In" as UC01
+  usecase "UC-02 Log Out" as UC02
+  usecase "UC-03 Access Protected Function" as UC03
+  usecase "UC-04 Manage User Account" as UC04
+  usecase "UC-05 Assign Role / Permission" as UC05
+  usecase "UC-06 Review Critical Action Metadata" as UC06
+}
+
+SA --> UC01
+IA --> UC01
+WO --> UC01
+MV --> UC01
+SA --> UC02
+IA --> UC02
+WO --> UC02
+MV --> UC02
+
+SA --> UC04
+SA --> UC05
+SA --> UC06
+IA --> UC06
+
+UC04 ..> UC03 : <<include>>
+UC05 ..> UC03 : <<include>>
+UC06 ..> UC03 : <<include>>
+UC03 ..> UC01 : <<include>> : sesi diperlukan
+
+note bottom of UC03
+  Backend authorization wajib.
+  D-T05 Proposed — pending approval.
+end note
+
+@enduml

@@ -1,0 +1,66 @@
+@startuml UC_Inventory_Transactions
+title Inventory Transactions — Provisional
+
+left to right direction
+
+actor "Inventory Administrator" as IA
+actor "Warehouse Operator" as WO
+
+rectangle "System Boundary — Inventory Transactions" {
+  usecase "UC-15 Create Inbound Draft" as UC15
+  usecase "UC-16 Post Inbound" as UC16
+  usecase "UC-17 Create Outbound Draft" as UC17
+  usecase "UC-18 Post Outbound" as UC18
+  usecase "UC-19 Create Transfer Draft" as UC19
+  usecase "UC-20 Post Transfer" as UC20
+  usecase "UC-21 Open Opname Session" as UC21
+  usecase "UC-22 Record Physical Count" as UC22
+  usecase "UC-23 Post Opname Adjustment" as UC23
+  usecase "UC-03 Access Protected Function" as UC03
+}
+
+IA --> UC15
+IA --> UC16
+IA --> UC17
+IA --> UC18
+IA --> UC19
+IA --> UC20
+IA --> UC21
+IA --> UC22
+IA --> UC23
+
+WO --> UC15
+WO --> UC17
+WO --> UC19
+WO --> UC21
+WO --> UC22
+
+UC16 ..> UC03 : <<include>>
+UC18 ..> UC03 : <<include>>
+UC20 ..> UC03 : <<include>>
+UC23 ..> UC03 : <<include>>
+UC15 ..> UC03 : <<include>>
+UC17 ..> UC03 : <<include>>
+UC19 ..> UC03 : <<include>>
+UC21 ..> UC03 : <<include>>
+UC22 ..> UC03 : <<include>>
+
+UC15 ..> UC16 : <<include>> : Draft harus lengkap sebelum post
+UC17 ..> UC18 : <<include>> : Draft harus lengkap sebelum post
+UC19 ..> UC20 : <<include>> : Draft harus lengkap sebelum post
+UC21 ..> UC22 : <<include>> : sesi aktif sebelum hitung fisik
+UC22 ..> UC23 : <<include>> : variance sebelum penyesuaian
+
+note bottom of UC21
+  RULE-023 Open / D-B09.
+  Tidak ada UC final untuk
+  location lock.
+end note
+
+note bottom of UC16
+  Posting atomik:
+  saldo + movement + status.
+  FR-AUD-004 di sini, bukan UC.
+end note
+
+@enduml

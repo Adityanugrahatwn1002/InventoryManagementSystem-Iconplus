@@ -1,0 +1,60 @@
+@startuml UC_Master_Data_Warehouse
+title Master Data & Warehouse — Provisional
+
+left to right direction
+
+actor "System Administrator" as SA
+actor "Inventory Administrator" as IA
+actor "Warehouse Operator" as WO
+actor "Manager / Viewer" as MV
+
+rectangle "System Boundary — Master Data & Warehouse" {
+  usecase "UC-07 Manage Item Category" as UC07
+  usecase "UC-08 Manage Unit" as UC08
+  usecase "UC-09 Manage Item & Tracking Method" as UC09
+  usecase "UC-10 Set Minimum Stock" as UC10
+  usecase "UC-11 Manage Supplier Reference" as UC11
+  usecase "UC-12 Manage Warehouse" as UC12
+  usecase "UC-13 Manage Location Hierarchy" as UC13
+  usecase "UC-14 Deactivate Master Preserving History" as UC14
+  usecase "UC-03 Access Protected Function" as UC03
+}
+
+IA --> UC07
+IA --> UC08
+IA --> UC09
+IA --> UC10
+IA --> UC11
+IA --> UC12
+IA --> UC13
+IA --> UC14
+
+SA --> UC07
+SA --> UC08
+SA --> UC09
+SA --> UC12
+SA --> UC13
+
+WO --> UC09
+WO --> UC13
+MV --> UC09
+MV --> UC13
+
+UC09 ..> UC14 : <<extend>> : ketika master dinonaktifkan
+UC13 ..> UC14 : <<extend>> : ketika lokasi dinonaktifkan
+
+UC07 ..> UC03 : <<include>>
+UC08 ..> UC03 : <<include>>
+UC09 ..> UC03 : <<include>>
+UC10 ..> UC03 : <<include>>
+UC11 ..> UC03 : <<include>>
+UC12 ..> UC03 : <<include>>
+UC13 ..> UC03 : <<include>>
+UC14 ..> UC03 : <<include>>
+
+note bottom of UC09
+  D-B01 / D-B02 / D-B03 Proposed.
+  Unique global serial menunggu approval.
+end note
+
+@enduml

@@ -1,0 +1,80 @@
+@startuml UC_Monitoring_Reporting
+title Inventory Monitoring & Reporting — Provisional
+
+left to right direction
+
+actor "System Administrator" as SA
+actor "Inventory Administrator" as IA
+actor "Warehouse Operator" as WO
+actor "Manager / Viewer" as MV
+
+rectangle "System Boundary — Monitoring, Reporting & Audit" {
+  usecase "UC-24 View Stock Balance" as UC24
+  usecase "UC-25 View Stock Card" as UC25
+  usecase "UC-26 Search / Filter Transactions" as UC26
+  usecase "UC-27 View Dashboard Summary" as UC27
+  usecase "UC-28 View Low Stock Items" as UC28
+  usecase "UC-29 Report Inbound / Outbound" as UC29
+  usecase "UC-30 Report Mutation / Balance" as UC30
+  usecase "UC-31 Report Opname Summary" as UC31
+  usecase "UC-32 Export Report (Future)" as UC32
+  usecase "UC-33 Review Audit Log" as UC33
+  usecase "UC-03 Access Protected Function" as UC03
+}
+
+SA --> UC24
+SA --> UC25
+SA --> UC26
+SA --> UC29
+SA --> UC30
+SA --> UC31
+SA --> UC33
+
+IA --> UC24
+IA --> UC25
+IA --> UC26
+IA --> UC27
+IA --> UC28
+IA --> UC29
+IA --> UC30
+IA --> UC31
+IA --> UC33
+
+WO --> UC24
+WO --> UC25
+WO --> UC26
+WO --> UC29
+
+MV --> UC24
+MV --> UC25
+MV --> UC26
+MV --> UC27
+MV --> UC28
+MV --> UC29
+MV --> UC30
+MV --> UC31
+
+UC32 ..> UC29 : <<extend>> : setelah D-B17 disetujui
+UC32 ..> UC30 : <<extend>> : setelah D-B17 disetujui
+UC32 ..> UC31 : <<extend>> : setelah D-B17 disetujui
+
+UC24 ..> UC03 : <<include>>
+UC29 ..> UC03 : <<include>>
+UC33 ..> UC03 : <<include>>
+
+note bottom of UC27
+  D-B13 Proposed.
+  Tidak ada total lintas satuan.
+end note
+
+note bottom of UC32
+  D-B17 Deferred —
+  TIDAK termasuk MVP.
+end note
+
+note bottom of UC33
+  D-B16 Open —
+  retensi belum final.
+end note
+
+@enduml

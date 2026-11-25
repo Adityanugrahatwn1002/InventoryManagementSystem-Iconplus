@@ -1,0 +1,84 @@
+@startuml Use_Case_Overview
+title Use Case Overview — Inventory Management System (Provisional)
+
+left to right direction
+
+actor "System Administrator\n(System Admin)" as SA
+actor "Inventory Administrator\n(Inventory Admin)" as IA
+actor "Warehouse Operator" as WO
+actor "Manager / Viewer" as MV
+
+rectangle "Inventory Management System — System Boundary" {
+  usecase "UC-01 Log In" as UC01
+  usecase "UC-02 Log Out" as UC02
+  usecase "UC-03 Access Protected Function" as UC03
+
+  usecase "UC-04 Manage User Account" as UC04
+  usecase "UC-05 Assign Role / Permission" as UC05
+  usecase "UC-06 Review Critical Action Metadata" as UC06
+
+  usecase "UC-07–UC-11 Master Data" as MSTR
+  usecase "UC-12–UC-14 Warehouse & Location" as WH
+  usecase "UC-15–UC-23 Inventory Transactions" as TRX
+  usecase "UC-24–UC-26 Balance & Stock Card" as BAL
+  usecase "UC-27–UC-28 Dashboard" as DASH
+  usecase "UC-29–UC-32 Reporting" as RPT
+  usecase "UC-33–UC-34 Audit Trail" as AUD
+}
+
+SA --> UC01
+IA --> UC01
+WO --> UC01
+MV --> UC01
+
+SA --> UC04
+SA --> UC05
+SA --> UC06
+SA --> MSTR
+SA --> WH
+SA --> BAL
+SA --> RPT
+SA --> AUD
+
+IA --> MSTR
+IA --> WH
+IA --> TRX
+IA --> BAL
+IA --> RPT
+IA --> AUD
+
+WO --> TRX
+WO --> BAL
+WO --> RPT
+WO --> MSTR
+
+MV --> BAL
+MV --> DASH
+MV --> RPT
+
+MSTR ..> UC03 : <<include>>
+WH ..> UC03 : <<include>>
+TRX ..> UC03 : <<include>>
+BAL ..> UC03 : <<include>>
+RPT ..> UC03 : <<include>>
+AUD ..> UC03 : <<include>>
+
+note right of TRX
+  Draft tidak mengubah saldo.
+  Posting atomik + movement.
+  RULE-023 / D-B09 Open:
+  tidak ada UC location lock.
+end note
+
+note right of DASH
+  D-B13 Proposed:
+  dilarang menjumlahkan
+  satuan berbeda.
+end note
+
+note right of RPT
+  FR-REP-004 / D-B17 Deferred:
+  export bukan MVP.
+end note
+
+@enduml
