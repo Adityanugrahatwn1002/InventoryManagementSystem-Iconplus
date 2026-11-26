@@ -1,0 +1,75 @@
+@startuml Activity_Outbound
+title Activity Diagram — Stock Outbound (Provisional)
+
+' REFERENCE
+' Use Case : UC-17 Buat Draft outbound lengkap; UC-18 Post outbound
+' FR       : FR-OUT-001, FR-OUT-002, FR-OUT-003, FR-OUT-004, FR-OUT-005, FR-OUT-006, FR-AUD-004 (cross-cutting)
+' RULE     : RULE-004, RULE-007, RULE-008, RULE-009, RULE-010, RULE-011, RULE-014, RULE-018, RULE-024, RULE-025, RULE-027
+' Decision : D-B03 Proposed; D-B07 Proposed; D-B15 Proposed; D-T06 Proposed
+' Catatan  : Hak posting WO belum final (UD-03 unresolved reference). Negative stock dilarang.
+
+start
+
+|Warehouse Operator / Inventory Administrator|
+:Buat header outbound bernomor unik [FR-OUT-001];
+:Pilih barang, lokasi asal, kuantitas, serial [FR-OUT-002/004];
+:Isi tujuan, penerima, atau alasan [FR-OUT-006];
+
+|System|
+if (Barang dan lokasi asal aktif, serial tersedia?) then (Ya)
+  :Merge — Data awal valid;
+else (Tidak)
+  :Tolak Draft;
+  stop
+endif
+
+if (Kuantitas lebih dari 0 dan tidak melebihi saldo?) then (Ya)
+  |Warehouse Operator / Inventory Administrator|
+  :Simpan Draft [FR-OUT-001/002];
+  |System|
+  :Saldo tidak berkurang [RULE-010];
+else (Tidak)
+  |System|
+  :Tolak; negative stock dilarang [RULE-014 / FR-OUT-003];
+  stop
+endif
+
+|Warehouse Operator / Inventory Administrator|
+if (Draft direvisi?) then (Ya)
+  :Ubah baris Draft;
+  :Simpan ulang Draft; saldo tidak berubah;
+else (Tidak)
+  :Lanjutkan ke posting;
+endif
+
+|Inventory Administrator|
+if (Permission posting berwenang dan dokumen masih Draft?) then (Ya)
+  |System|
+  :START TRANSACTION [FR-AUD-004 / RULE-027];
+  if (Error sebelum commit?) then (Ya)
+    :ROLLBACK penuh;
+    :Saldo, serial, status, movement tidak berubah;
+    stop
+  else (Tidak)
+    :Kurangi saldo lokasi asal [RULE-014 / FR-OUT-005];
+    :Buat movement OUTBOUND [RULE-018];
+    :Update status serial menjadi tidak tersedia;
+    :Ubah status menjadi Posted;
+    :Catat aktor dan waktu [FR-AUD-001 / FR-USER-003];
+    if (Error pada langkah transaction?) then (Ya)
+      :ROLLBACK penuh;
+      stop
+    else (Tidak)
+      :COMMIT;
+      :Merge — Posting berhasil;
+      stop
+    endif
+  endif
+else (Tidak)
+  |System|
+  :Tolak posting; saldo tetap;
+  :Post ulang tidak menggandakan saldo [D-B15];
+  stop
+endif
+
+@enduml

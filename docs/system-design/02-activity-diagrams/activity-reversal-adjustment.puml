@@ -1,0 +1,69 @@
+@startuml Activity_Reversal_Adjustment
+title Activity Diagram — Audit Trail & Reversal/Adjustment (Provisional)
+
+' REFERENCE
+' Use Case : UC-33 Tinjau audit log; UC-34 Koreksi dokumen Posted; UC-06 Tinjau metadata aksi kritis (pendukung)
+' FR       : FR-AUD-001, FR-AUD-002, FR-AUD-003, FR-AUD-004, FR-USER-003 (pendukung)
+' RULE     : RULE-012, RULE-018, RULE-026, RULE-027
+' Decision : D-B08 Proposed; D-B16 Open; D-T06 Proposed
+' Catatan  : Detail reversal/adjustment belum final. Retensi audit belum final. Cancel Draft dan Opening Balance tidak dibuat sebagai requirement final.
+
+start
+
+|System Administrator / Inventory Administrator|
+if (Mode?) then (Lihat Audit Log)
+  |System|
+  if (Permission lihat audit sesuai BRA §12?) then (Ya)
+    :Filter aktor, aksi, periode [FR-AUD-001];
+    :Tampilkan aktor, aksi, objek, waktu, referensi;
+    :Merge — Audit terbaca; retensi menunggu D-B16 Open;
+    stop
+  else (Tidak)
+    :Tolak akses audit;
+    stop
+  endif
+else (Koreksi Posted)
+  |Inventory Administrator|
+  :Upaya edit atau hapus langsung dokumen Posted;
+
+  |System|
+  if (Status dokumen?) then (Posted)
+    :Tolak edit/hapus langsung [RULE-012 / FR-AUD-002];
+    :Dokumen awal tetap utuh;
+    :Arahkan ke reversal/adjustment [FR-AUD-003];
+    |Inventory Administrator|
+    :Ajukan koreksi: dokumen awal, alasan, tipe koreksi;
+    |System|
+    if (Referensi awal dan alasan lengkap?) then (Ya)
+      :Merge — Koreksi valid;
+      :START TRANSACTION [FR-AUD-004 / RULE-027];
+      if (Error sebelum commit?) then (Ya)
+        :ROLLBACK penuh;
+        :Dokumen awal dan saldo tidak berubah;
+        stop
+      else (Tidak)
+        :Buat dokumen koreksi [FR-AUD-003];
+        :Buat movement pembalik/penyesuaian [RULE-026];
+        :Dokumen awal tidak diubah;
+        :Catat auditor, aktor, waktu, alasan [FR-AUD-001];
+        if (Error pada langkah transaction?) then (Ya)
+          :ROLLBACK penuh;
+          stop
+        else (Tidak)
+          :COMMIT;
+          :Merge — Koreksi dapat ditelusuri;
+          stop
+        endif
+      endif
+    else (Tidak)
+      :Tolak koreksi; referensi dan alasan wajib [FR-AUD-003];
+      stop
+    endif
+  else (Draft)
+    :Tidak dibekukan di sini [D-B15 Proposed];
+    :Detail cancel Draft belum final;
+    stop
+  endif
+endif
+
+@enduml

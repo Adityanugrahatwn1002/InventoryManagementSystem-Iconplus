@@ -1,0 +1,76 @@
+@startuml Activity_Opname
+title Activity Diagram — Stock Opname (Provisional — D-B09 Open)
+
+' REFERENCE
+' Use Case : UC-21 Buka sesi opname dan rekam snapshot; UC-22 Catat hitung fisik dan selisih; UC-23 Post penyesuaian opname
+' FR       : FR-OPN-001, FR-OPN-002, FR-OPN-003, FR-OPN-004, FR-OPN-005, FR-OPN-006, FR-AUD-004 (cross-cutting)
+' RULE     : RULE-018, RULE-021, RULE-022, RULE-023, RULE-027
+' Decision : D-B09 Open; D-T06 Proposed
+' Catatan  : TIDAK ada location lock final. RULE-023/D-B09 belum disetujui. Opening Balance dan Cancel Draft tidak dibuat sebagai requirement final.
+
+start
+
+|Inventory Administrator / Warehouse Operator|
+:Buka sesi opname: lokasi dan periode [FR-OPN-001];
+
+|System|
+if (Lokasi aktif?) then (Ya)
+  :Rekam snapshot sistem [FR-OPN-002];
+  :Catatan — D-B09 Open: tidak ada location lock final;
+  :Merge — Sesi dan snapshot tercatat;
+else (Tidak)
+  :Tolak sesi;
+  stop
+endif
+
+|Warehouse Operator|
+:Input hasil hitung fisik dan serial jika berlaku [FR-OPN-003];
+
+|System|
+if (Nilai hitung fisik valid?) then (Ya)
+  :Hitung variance = Physical Quantity - Snapshot [RULE-021 / FR-OPN-004];
+  :Simpan baris opname [FR-OPN-003/004];
+else (Tidak)
+  :Tolak nilai;
+  stop
+endif
+
+|Inventory Administrator|
+if (Variance ditinjau dan alasan diisi?) then (Ya)
+  |System|
+  :Merge — Penyesuaian siap diotorisasi;
+else (Tidak)
+  |System|
+  :Tolak penyesuaian; alasan wajib [FR-OPN-005];
+  stop
+endif
+
+|Inventory Administrator|
+if (Permission otorisasi dan posting berwenang?) then (Ya)
+  |System|
+  :START TRANSACTION [FR-AUD-004 / RULE-027];
+  if (Error sebelum commit?) then (Ya)
+    :ROLLBACK penuh;
+    :Saldo, movement, status, audit tidak berubah;
+    stop
+  else (Tidak)
+    :Buat movement OPNAME_ADJUSTMENT [FR-OPN-006 / RULE-018];
+    :Perbarui saldo ke hasil fisik [RULE-021];
+    :Ubah status sesi menjadi Posted;
+    :Catat aktor, waktu, dan alasan [RULE-022];
+    if (Error pada langkah transaction?) then (Ya)
+      :ROLLBACK penuh;
+      stop
+    else (Tidak)
+      :COMMIT;
+      :Merge — Penyesuaian berhasil;
+      stop
+    endif
+  endif
+else (Tidak)
+  |System|
+  :Tolak; WO tidak dapat mengotorisasi penyesuaian [FR-OPN-005];
+  stop
+endif
+
+@enduml

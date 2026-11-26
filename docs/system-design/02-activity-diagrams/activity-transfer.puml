@@ -1,0 +1,78 @@
+@startuml Activity_Transfer
+title Activity Diagram — Stock Transfer (Provisional)
+
+' REFERENCE
+' Use Case : UC-19 Buat Draft transfer; UC-20 Post transfer
+' FR       : FR-TRF-001, FR-TRF-002, FR-TRF-003, FR-TRF-004, FR-TRF-005, FR-AUD-004 (cross-cutting)
+' RULE     : RULE-010, RULE-011, RULE-014, RULE-015, RULE-016, RULE-017, RULE-018, RULE-024, RULE-025, RULE-027
+' Decision : D-B15 Proposed; D-T06 Proposed
+' Catatan  : Hak posting WO belum final (UD-03 unresolved reference). Transfer antar gudang bukan MVP.
+
+start
+
+|Warehouse Operator / Inventory Administrator|
+:Buat header transfer bernomor unik [FR-TRF-001];
+:Pilih lokasi asal dan lokasi tujuan [FR-TRF-002];
+:Pilih barang, kuantitas, serial di lokasi asal [FR-TRF-003];
+
+|System|
+if (Lokasi asal dan tujuan berbeda serta aktif?) then (Ya)
+  :Merge — Lokasi valid [RULE-016];
+else (Tidak)
+  :Tolak Draft;
+  stop
+endif
+
+if (Saldo asal cukup dan serial valid?) then (Ya)
+  |Warehouse Operator / Inventory Administrator|
+  :Simpan Draft [FR-TRF-001..003];
+  |System|
+  :Saldo belum berubah [RULE-010];
+else (Tidak)
+  |System|
+  :Tolak; negative stock dilarang [RULE-014];
+  stop
+endif
+
+|Warehouse Operator / Inventory Administrator|
+if (Draft direvisi?) then (Ya)
+  :Ubah baris Draft;
+  :Simpan ulang Draft; saldo tidak berubah;
+else (Tidak)
+  :Lanjutkan ke posting;
+endif
+
+|Inventory Administrator|
+if (Permission posting berwenang dan dokumen masih Draft?) then (Ya)
+  |System|
+  :START TRANSACTION [FR-AUD-004 / RULE-027];
+  if (Error sebelum commit?) then (Ya)
+    :ROLLBACK penuh;
+    :Kedua movement dibatalkan;
+    stop
+  else (Tidak)
+    :Kurangi saldo asal;
+    :Buat movement TRANSFER_OUT [RULE-015 / FR-TRF-004];
+    :Tambah saldo tujuan;
+    :Buat movement TRANSFER_IN [RULE-015 / FR-TRF-004];
+    :Update lokasi dan status serial;
+    :Ubah status menjadi Posted;
+    :Catat aktor dan waktu [FR-AUD-001 / FR-USER-003];
+    if (Total stok gabungan tetap sama?) then (Ya)
+      :Merge — Invariant transfer terjaga [RULE-017 / FR-TRF-005];
+      :COMMIT;
+      stop
+    else (Tidak)
+      :ROLLBACK penuh;
+      :Flag inkonsistensi ledger;
+      stop
+    endif
+  endif
+else (Tidak)
+  |System|
+  :Tolak posting; saldo tetap;
+  :Post ulang tidak menggandakan saldo [D-B15];
+  stop
+endif
+
+@enduml

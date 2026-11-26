@@ -1,0 +1,67 @@
+@startuml Activity_Inbound
+title Activity Diagram — Stock Inbound (Provisional)
+
+' REFERENCE
+' Use Case : UC-15 Buat Draft inbound lengkap; UC-16 Post inbound
+' FR       : FR-IN-001, FR-IN-002, FR-IN-003, FR-IN-004, FR-IN-005, FR-IN-006, FR-AUD-004 (cross-cutting)
+' RULE     : RULE-004, RULE-005, RULE-007, RULE-008, RULE-009, RULE-010, RULE-011, RULE-013, RULE-018, RULE-024, RULE-025, RULE-027
+' Decision : D-B03 Proposed; D-B05 Proposed; D-B06 Proposed; D-B15 Proposed; D-T06 Proposed
+' Catatan  : Hak posting WO belum final (UD-03 unresolved reference). Cancel Draft dan Opening Balance tidak dibuat sebagai requirement final.
+
+start
+
+|Warehouse Operator / Inventory Administrator|
+:Buat header inbound bernomor unik [FR-IN-001];
+:Tambah baris: barang, lokasi tujuan, kuantitas, serial [FR-IN-002..004];
+:Isi referensi sumber jika tersedia [FR-IN-006];
+
+|System|
+if (Barang dan lokasi aktif, kuantitas lebih dari 0, serial valid?) then (Ya)
+  :Simpan Draft [FR-IN-001..004];
+  :Saldo tidak berubah [RULE-010];
+  :Merge — Draft valid;
+else (Tidak)
+  :Tolak Draft;
+  :Tampilkan pesan validasi;
+  stop
+endif
+
+|Warehouse Operator / Inventory Administrator|
+if (Draft direvisi?) then (Ya)
+  :Ubah baris Draft;
+  :Simpan ulang Draft; saldo tidak berubah;
+else (Tidak)
+  :Lanjutkan ke posting;
+endif
+
+|Inventory Administrator|
+if (Permission posting berwenang dan dokumen masih Draft?) then (Ya)
+  |System|
+  :START TRANSACTION [FR-AUD-004 / RULE-027];
+  if (Error sebelum commit?) then (Ya)
+    :ROLLBACK penuh;
+    :Saldo, serial, status, movement tidak berubah;
+    stop
+  else (Tidak)
+    :Tambah saldo lokasi tujuan [RULE-013 / FR-IN-005];
+    :Buat movement INBOUND [RULE-018];
+    :Update status serial;
+    :Ubah status menjadi Posted;
+    :Catat aktor dan waktu [FR-AUD-001 / FR-USER-003];
+    if (Error pada langkah transaction?) then (Ya)
+      :ROLLBACK penuh;
+      stop
+    else (Tidak)
+      :COMMIT;
+      :Merge — Posting berhasil;
+      stop
+    endif
+  endif
+else (Tidak)
+  |System|
+  :Tolak posting; saldo tetap;
+  :Post ulang tidak menggandakan saldo [D-B15];
+  stop
+endif
+
+@enduml
