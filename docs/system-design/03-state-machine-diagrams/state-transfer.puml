@@ -1,0 +1,36 @@
+@startuml State_Transfer
+title State Machine — Transfer Document (SM-03, Provisional)
+
+' OBJECT  : SMO-03 Inventory Transaction Document — Transfer
+' UC      : UC-19 Buat Draft transfer; UC-20 Post transfer
+' FR      : FR-TRF-001, FR-TRF-002, FR-TRF-003, FR-TRF-004, FR-TRF-005, FR-AUD-004, FR-AUD-001
+' RULE    : RULE-003, RULE-010, RULE-011, RULE-014, RULE-015, RULE-016, RULE-017, RULE-018, RULE-024, RULE-025, RULE-027
+' DECISION: D-B04 Proposed, D-B15 Proposed, D-T06 Proposed
+' CATATAN : Dua movement dalam satu transaksi. Total stok gabungan tidak berubah.
+
+state "Draft" as Draft
+state "Posted" as Posted
+
+[*] --> Draft : Create [UC-19, nomor unik, asal dan tujuan berbeda serta aktif] / simpan baris, saldo kedua lokasi tetap
+
+Draft --> Draft : Revise [masih Draft] / simpan ulang baris, saldo tetap
+
+Draft --> Posted : Post [UC-20, permission, saldo asal cukup, serial di asal, masih Draft] / transaksi kurangi asal TRANSFER_OUT, tambah tujuan TRANSFER_IN, audit, COMMIT
+
+Draft --> Draft : Post gagal [lokasi sama atau nonaktif, saldo kurang, total berubah, atau error] / ROLLBACK kedua movement
+
+Posted --> Posted : Edit/Hapus [RULE-012] / tolak, dokumen utuh
+
+Posted --> [*]
+
+note right of Draft
+  RULE-010: Draft tidak mengubah saldo.
+  Transfer antar gudang bukan MVP.
+end note
+
+note right of Posted
+  RULE-017: total gabungan tetap.
+  Immutable; koreksi lewat SM-05.
+end note
+
+@enduml

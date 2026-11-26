@@ -1,0 +1,36 @@
+@startuml State_Outbound
+title State Machine — Outbound Document (SM-02, Provisional)
+
+' OBJECT  : SMO-02 Inventory Transaction Document — Outbound
+' UC      : UC-17 Buat Draft outbound lengkap; UC-18 Post outbound
+' FR      : FR-OUT-001, FR-OUT-002, FR-OUT-003, FR-OUT-004, FR-OUT-005, FR-OUT-006, FR-AUD-004, FR-AUD-001
+' RULE    : RULE-003, RULE-004, RULE-007, RULE-008, RULE-009, RULE-010, RULE-011, RULE-014, RULE-018, RULE-024, RULE-025, RULE-027
+' DECISION: D-B03 Proposed, D-B07 Proposed, D-B15 Proposed, D-T06 Proposed
+' CATATAN : Negative stock dilarang. Hak posting WO tidak final (UD-03 unresolved reference).
+
+state "Draft" as Draft
+state "Posted" as Posted
+
+[*] --> Draft : Create [UC-17, nomor unik, master aktif] / simpan baris dan serial tersedia, saldo tetap
+
+Draft --> Draft : Revise [masih Draft] / simpan ulang baris, saldo tetap
+
+Draft --> Posted : Post [UC-18, permission, serial tersedia, kuantitas tidak melebihi saldo, masih Draft] / transaksi kurangi saldo asal, movement OUTBOUND, audit, COMMIT
+
+Draft --> Draft : Post gagal [saldo kurang, serial invalid, tanpa permission, atau error] / ROLLBACK penuh, tolak tanpa negative stock
+
+Posted --> Posted : Edit/Hapus [RULE-012] / tolak, dokumen utuh
+
+Posted --> [*]
+
+note right of Draft
+  RULE-010: Draft tidak mengurangi saldo.
+  Hak posting WO default tidak (BRA 12).
+end note
+
+note right of Posted
+  RULE-014: saldo asal berkurang.
+  Immutable; koreksi lewat SM-05.
+end note
+
+@enduml

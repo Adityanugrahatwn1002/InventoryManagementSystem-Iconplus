@@ -1,0 +1,36 @@
+@startuml State_Inbound
+title State Machine — Inbound Document (SM-01, Provisional)
+
+' OBJECT  : SMO-01 Inventory Transaction Document — Inbound
+' UC      : UC-15 Buat Draft inbound lengkap; UC-16 Post inbound
+' FR      : FR-IN-001, FR-IN-002, FR-IN-003, FR-IN-004, FR-IN-005, FR-IN-006, FR-AUD-004, FR-AUD-001
+' RULE    : RULE-003, RULE-004, RULE-007, RULE-008, RULE-009, RULE-010, RULE-011, RULE-013, RULE-018, RULE-024, RULE-025, RULE-027
+' DECISION: D-B03 Proposed, D-B05 Proposed, D-B06 Proposed, D-B15 Proposed, D-T06 Proposed
+' CATATAN : Posting menambah saldo lokasi tujuan. Validated/Cancelled bukan state.
+
+state "Draft" as Draft
+state "Posted" as Posted
+
+[*] --> Draft : Create [UC-15, nomor unik RULE-024, master aktif] / simpan header, baris, referensi sumber, saldo tetap
+
+Draft --> Draft : Revise [masih Draft] / simpan ulang baris, saldo tetap
+
+Draft --> Posted : Post [UC-16, permission RULE-011, kuantitas lebih dari nol, serial valid, masih Draft] / transaksi tambah saldo tujuan, movement INBOUND, audit, COMMIT
+
+Draft --> Draft : Post gagal [validasi gagal, tanpa permission, atau error] / ROLLBACK penuh, saldo dan status tetap
+
+Posted --> Posted : Edit/Hapus [RULE-012] / tolak, dokumen utuh
+
+Posted --> [*]
+
+note right of Draft
+  RULE-010: Draft tidak mengubah saldo.
+  Supervisor opsional, D-B06 Proposed.
+end note
+
+note right of Posted
+  RULE-013: saldo tujuan bertambah satu kali.
+  Immutable; koreksi lewat SM-05.
+end note
+
+@enduml

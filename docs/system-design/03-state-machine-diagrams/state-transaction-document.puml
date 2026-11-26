@@ -1,0 +1,37 @@
+@startuml State_Transaction_Document
+title State Machine — Inventory Transaction Document (Pola Umum Draft ke Posted)
+
+' OBJECT  : SMO-00 pola umum; spesialisasi ada pada SM-01 Inbound, SM-02 Outbound, SM-03 Transfer
+' UC      : UC-15, UC-16, UC-17, UC-18, UC-19, UC-20
+' FR      : FR-IN-001..006, FR-OUT-001..006, FR-TRF-001..005, FR-AUD-001, FR-AUD-004
+' RULE    : RULE-003, RULE-004, RULE-010, RULE-011, RULE-012, RULE-018, RULE-024, RULE-025, RULE-027
+' DECISION: D-B07 Proposed, D-B15 Proposed, D-T06 Proposed
+' CATATAN : Topologi status identik; guard dan action berbeda per jenis transaksi.
+'           Validated bukan state tersimpan. Cancelled tidak dimodelkan (D-B15 Proposed).
+
+state "Draft" as Draft
+state "Posted" as Posted
+
+[*] --> Draft : Create [nomor unik RULE-024, master aktif] / simpan header dan baris, saldo tidak diubah
+
+Draft --> Draft : Revise [masih Draft] / simpan ulang, saldo tidak diubah
+
+Draft --> Posted : Post [permission RULE-011, validasi RULE lulus, masih Draft] / transaksi atomik, movement, audit, COMMIT
+
+Draft --> Draft : Post gagal [validasi gagal atau error] / ROLLBACK, saldo dan status tetap
+
+Posted --> Posted : Edit/Hapus [RULE-012] / tolak, dokumen utuh
+
+Posted --> [*]
+
+note right of Draft
+  RULE-010: Draft tidak mengubah saldo.
+  Tidak ada state Validated atau Cancelled.
+end note
+
+note right of Posted
+  RULE-012: dokumen immutable.
+  Koreksi lewat dokumen terpisah, D-B08 Proposed.
+end note
+
+@enduml

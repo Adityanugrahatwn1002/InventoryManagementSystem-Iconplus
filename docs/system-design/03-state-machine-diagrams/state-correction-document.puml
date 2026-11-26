@@ -1,0 +1,36 @@
+@startuml State_Correction_Document
+title State Machine — Reversal/Adjustment Document (SM-05, Provisional D-B08 Proposed)
+
+' OBJECT  : SMO-05 dokumen koreksi terpisah; dokumen asli tetap Posted dan immutable
+' UC      : UC-34 Koreksi dokumen Posted; UC-33 konteks audit
+' FR      : FR-AUD-001, FR-AUD-002, FR-AUD-003, FR-AUD-004
+' RULE    : RULE-012, RULE-018, RULE-026, RULE-027
+' DECISION: D-B08 Proposed, D-B16 Open, D-T06 Proposed
+' CATATAN : TIDAK ada transisi Posted menjadi Reversed pada dokumen asli.
+
+state "Draft koreksi" as DraftKoreksi
+state "Posted koreksi" as PostedKoreksi
+
+[*] --> DraftKoreksi : Create [UC-34, referensi dokumen awal dan alasan lengkap, IA] / buat dokumen baru
+
+DraftKoreksi --> DraftKoreksi : Validasi gagal [referensi, alasan, atau otorisasi kurang] / tolak, dokumen asli tetap utuh
+
+DraftKoreksi --> PostedKoreksi : Post [IA berwenang] / transaksi movement pembalik atau penyesuaian, audit, COMMIT
+
+DraftKoreksi --> DraftKoreksi : Post gagal [error sebelum commit] / ROLLBACK penuh, dokumen asli tetap utuh
+
+PostedKoreksi --> PostedKoreksi : Edit/Hapus [RULE-012] / tolak
+
+PostedKoreksi --> [*]
+
+note right of DraftKoreksi
+  Nama status provisional, D-B08 Proposed.
+  Objek berbeda dari dokumen asli.
+end note
+
+note right of PostedKoreksi
+  Audit mempertahankan hubungan
+  ke dokumen awal, RULE-026.
+end note
+
+@enduml

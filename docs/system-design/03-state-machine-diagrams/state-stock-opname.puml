@@ -1,0 +1,34 @@
+@startuml State_Stock_Opname
+title State Machine — Stock Opname Session (SM-04, D-B09 Open)
+
+' OBJECT  : SMO-04 Stock Opname Session
+' UC      : UC-21 Buka sesi dan snapshot; UC-22 Hitung fisik dan selisih; UC-23 Post penyesuaian
+' FR      : FR-OPN-001, FR-OPN-002, FR-OPN-003, FR-OPN-004, FR-OPN-005, FR-OPN-006, FR-AUD-004, FR-AUD-001
+' RULE    : RULE-004, RULE-005, RULE-018, RULE-021, RULE-022, RULE-023, RULE-027
+' DECISION: D-B09 Open, D-T06 Proposed
+' CATATAN : Tidak ada state Locked, Approved, atau Completed. RULE-023 belum disetujui.
+
+state "Draft" as Draft
+state "Posted" as Posted
+
+[*] --> Draft : Open [UC-21, lokasi aktif] / buat sesi dan rekam snapshot sistem
+
+Draft --> Draft : Input [UC-22, kuantitas valid] / simpan hitung fisik, variance sama dengan fisik dikurangi snapshot
+
+Draft --> Draft : Ajukan [UC-23, alasan diisi dan Inventory Admin] / siapkan penyesuaian
+
+Draft --> Draft : Ditolak [tanpa alasan atau bukan Inventory Admin] / tolak, saldo tetap
+
+Draft --> Posted : Post [UC-23, IA berwenang] / transaksi movement OPNAME_ADJUSTMENT, saldo mengikuti hasil fisik, audit, COMMIT
+
+Draft --> Draft : Post gagal [error sebelum commit] / ROLLBACK penuh, saldo tidak parsial
+
+Posted --> [*]
+
+note right of Draft
+  Snapshot stabil, FR-OPN-002.
+  D-B09 Open: TIDAK ada location lock.
+  State hanya Draft dan Posted.
+end note
+
+@enduml
